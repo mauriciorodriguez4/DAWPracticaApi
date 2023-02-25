@@ -100,15 +100,17 @@ namespace webApiPractica.Controllers
                                select e).FirstOrDefault();            
 
             if (equipo == null) return NotFound();
-            return Ok(equipo);
+           
 
             equipo.nombre = equipoActualizar.nombre;
             equipo.descripcion = equipoActualizar.descripcion;
+            equipo.modelo = equipoActualizar.modelo;
             equipo.costo = equipoActualizar.costo;
+            equipo.estado = equipoActualizar.estado;
 
             _equiposContext.Entry(equipo).State = EntityState.Modified;
             _equiposContext.SaveChanges();
-            
+            return Ok(equipo);
         }
 
         [HttpDelete]
