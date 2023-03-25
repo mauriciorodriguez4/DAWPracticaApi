@@ -15,23 +15,50 @@ namespace webApiPractica.Controllers
             _equiposContext = equiposContexto;
         
         }
+
         /// <summary>
         // EndPoint que retorna el listado de todos los equipos existentes
         /// </summary>
         /// <returns></returns>
+         
         [HttpGet]
-        [Route("GetAll")]
+        [Route("GetAllEquiment")]
         public IActionResult Get()
         {
-            List<equipos> listadoequipo = (from e in _equiposContext.equipos select e).ToList();
-
-            if(listadoequipo.Count()==0)
+            try
             {
-                return NotFound();
+                /*VAR makes a global query, the term NEW returns
+                  an anonymous query of all the fields you want to display.*/
+                var equimentList = (from e in _equiposContext.equiposs
+                                    join m in _equiposContext.marcas on e.marca_id equals m.id_marcas
+                                    join te in _equiposContext.tipo_equipo on e.tipo_equipo_id equals te.id_tipo_equipo
+                                    select new
+                                    {
+                                        e.id_equipos,
+                                        e.nombre,
+                                        e.descripcion,
+                                        e.tipo_equipo_id,
+                                        tipo_equipo = te.descripcion,
+                                        e.marca_id,
+                                        m.nombre_marca
+                                    }).ToList();
+
+                /*Equipment list validation, if it is 0
+                 returns ERROR, but if there is more than 1, it returns the list.*/
+                if (equimentList.Count() == 0)
+                {
+                    return NotFound();
+                }
+
+                return Ok(equimentList);
             }
-                        
-            return Ok(listadoequipo);
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.Message);
+            }
         }
+
         /// <summary>
         /// Primera forma de hacer
         /// localhost:7889/api/equipos/getbyid?id=3&nombre=daw
@@ -39,95 +66,125 @@ namespace webApiPractica.Controllers
         /// localhost:7889/api/equipos/getbyid/id/daw
         /// </summary>
         /// <returns></returns>
-        
+                
         [HttpGet]
-        [Route("getbyid/{id}")]
-
-        /// Forma para acortar la URL
-        ///[Route("getbyid/{id}/{nombre}")]
-
+        [Route("getByIdTeam/{id}")]
+        /// This way returns a short URL
+        ///[Route("getByIdTeam/{id}/{nombre}")]
         public IActionResult GetById(int id)
-        {
-            /// El signo ?, significa que acepta null.
-            equipos? equipo = (from e in _equiposContext
-                          .equipos where e.id_equipos== id
-                          select e).FirstOrDefault();
-            ///Mostrar los datos, pero primero hacer las validaciones
-            
-            if(equipo == null) return NotFound();
-            return Ok(equipo);          
-     
-        }
-
-        [HttpGet]
-        [Route("find/{filtro}")]
-        public IActionResult GetByName(string filtro)
-        {
-            /// Contains es como decir "LIKE" en BD
-            List<equipos> equipo = (from e in _equiposContext
-                          .equipos
-                               where e.nombre.Contains(filtro)
-                               select e).ToList();
-            ///Mostrar los datos, pero primero hacer las validaciones
-
-            if (equipo == null) return NotFound();
-            return Ok(equipo);
-        }
-
-        [HttpPost]
-        [Route("add")]
-        public IActionResult Post([FromBody]equipos equipo)
         {
             try
             {
-                _equiposContext.equipos.Add(equipo);
-                _equiposContext.SaveChanges();
+                /// The ? sign means that it accepts null.
+                equiposs? equipo = (from e in _equiposContext
+                              .equiposs
+                                    where e.id_equipos == id
+                                    select e).FirstOrDefault();
+
+                ///Display the data, but first do the validations.
+                if (equipo == null) return NotFound();
                 return Ok(equipo);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }          
+     
+        }
+
+        //This method filters by keywords
+        [HttpGet]
+        [Route("find/{filter}")]
+        public IActionResult GetByName(string filter)
+        {
+            /// The word "Contains" is like saying "LIKE" in BD.
+            List<equiposs> equiment = (from e in _equiposContext
+                          .equiposs
+                               where e.nombre.Contains(filter)
+                               select e).ToList();
+            ///Display the data, but first do the validations.
+
+            if (equiment == null) return NotFound();
+            return Ok(equiment);
+        }
+
+        // this method adds a new piece of equipment
+        [HttpPost]
+        [Route("addEquipment")]
+        public IActionResult Post([FromBody]equiposs addEquipment)
+        {
+            try
+            {
+                _equiposContext.equiposs.Add(addEquipment);
+                _equiposContext.SaveChanges();
+                return Ok(addEquipment);
 
             } catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
+
+        //Method to update the equiment
         [HttpPut]
-        [Route("update/{id}")]
-        public IActionResult Actualizar(int id, [FromBody] equipos equipoActualizar)
+        [Route("updateEquiment/{id}")]
+        public IActionResult equimentUpdate(int id, [FromBody] equiposs equipmentUpdate)
         {
-            ///validar que exista ese registro en la base de datos
-            equipos? equipo = (from e in _equiposContext
-                         .equipos
-                               where e.id_equipos == id
-                               select e).FirstOrDefault();            
+            try
+            {
+                //first validate that there is a data record in the database
+                equiposs? validateEquipment = (from e in _equiposContext
+                             .equiposs
+                                               where e.id_equipos == id
+                                               select e).FirstOrDefault();
 
-            if (equipo == null) return NotFound();
-           
+                if (validateEquipment == null) return NotFound();
 
-            equipo.nombre = equipoActualizar.nombre;
-            equipo.descripcion = equipoActualizar.descripcion;
-            equipo.modelo = equipoActualizar.modelo;
-            equipo.costo = equipoActualizar.costo;
-            equipo.estado = equipoActualizar.estado;
 
-            _equiposContext.Entry(equipo).State = EntityState.Modified;
-            _equiposContext.SaveChanges();
-            return Ok(equipo);
+                validateEquipment.nombre = equipmentUpdate.nombre;
+                validateEquipment.descripcion = equipmentUpdate.descripcion;
+                validateEquipment.modelo = equipmentUpdate.modelo;
+                validateEquipment.costo = equipmentUpdate.costo;
+                validateEquipment.estado = equipmentUpdate.estado;
+
+                _equiposContext.Entry(validateEquipment).State = EntityState.Modified;
+                _equiposContext.SaveChanges();
+                return Ok(validateEquipment);
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpDelete]
-        [Route("eliminar/{id}")]
-        public IActionResult Delete(int id)
+        /*
+         this method instead of deleting an entire record,
+         it will only update it and change its status from active to inactive
+         */
+        [HttpPut]
+        [Route("updateEquipmentState/{id}")]
+        public IActionResult changeState(int id)
         {
-            equipos? equipo = (from e in _equiposContext
-                         .equipos
-                               where e.id_equipos == id
-                               select e).FirstOrDefault();
+            try
+            {
+                equiposs? validateEquipment = (from e in _equiposContext
+                         .equiposs
+                                               where e.id_equipos == id
+                                               select e).FirstOrDefault();
 
-            if (equipo == null) return NotFound();
+                if (validateEquipment == null) return NotFound();
+                validateEquipment.estado = "I";
+                _equiposContext.Entry(validateEquipment).State = EntityState.Modified;
+                _equiposContext.SaveChanges();
 
-            _equiposContext.equipos.Attach(equipo);
-            _equiposContext.equipos.Remove(equipo);
-            _equiposContext.SaveChanges();
-            return Ok(equipo);
+                return Ok(validateEquipment);
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.Message);
+            }
         }
         
     }

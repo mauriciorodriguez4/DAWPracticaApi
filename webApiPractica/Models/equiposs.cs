@@ -2,7 +2,7 @@
 
 namespace webApiPractica.Models
 {
-    public class equipos
+    public class equiposs
     {
         [Key]
         public int id_equipos { get; set; }
